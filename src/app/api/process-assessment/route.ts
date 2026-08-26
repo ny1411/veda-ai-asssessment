@@ -151,35 +151,38 @@ Return a STRICT JSON object matching this schema:
     const parsedData = JSON.parse(text);
 
     // Build final assessment result
-    const assessmentResult: AssessmentResult = {
-      assessmentId: `asm-${Date.now()}`,
-      title: parsedData.title || "Assessment Extraction",
-      subject: parsedData.subject || "General Science",
-      gradeLevel: parsedData.gradeLevel || "Grade 10",
-      studentName: parsedData.studentName || "Student Answer Sheet",
-      totalPages: answerSheetImages.length || 1,
-      pageImages: answerSheetImages.map((img: string, idx: number) => ({
-        pageNumber: idx + 1,
-        imageUrl: img,
-        width: 800,
-        height: 1100,
-      })),
-      questions: parsedData.questions || [],
-      unmatchedAnswers: parsedData.unmatchedAnswers || [],
-      summary: parsedData.summary || {
-        totalMarks: 0,
-        maxMarks: 0,
-        percentage: 0,
-        answeredCount: 0,
-        unansweredCount: 0,
-        outOfOrderCount: 0,
-        totalQuestions: parsedData.questions?.length || 0,
-        overallFeedback: "Assessment processed successfully.",
-        strengths: [],
-        weaknesses: [],
-        teacherRecommendation: "Review individual questions above.",
-      },
-    };
+      const questions = parsedData.questions || [];
+      const outOfOrderCount = questions.filter((q: QuestionEntry) => q.isOutOfOrder).length;
+
+      const assessmentResult: AssessmentResult = {
+        assessmentId: `asm-${Date.now()}`,
+        title: parsedData.title || "Assessment Extraction",
+        subject: parsedData.subject || "General Science",
+        gradeLevel: parsedData.gradeLevel || "Grade 10",
+        studentName: parsedData.studentName || "Student Answer Sheet",
+        totalPages: answerSheetImages.length || 1,
+        pageImages: answerSheetImages.map((img: string, idx: number) => ({
+          pageNumber: idx + 1,
+          imageUrl: img,
+          width: 800,
+          height: 1100,
+        })),
+        questions,
+        unmatchedAnswers: parsedData.unmatchedAnswers || [],
+        summary: {
+          totalMarks: parsedData.summary?.totalMarks ?? 0,
+          maxMarks: parsedData.summary?.maxMarks ?? 0,
+          percentage: parsedData.summary?.percentage ?? 0,
+          answeredCount: parsedData.summary?.answeredCount ?? questions.filter((q: QuestionEntry) => q.status === "ANSWERED").length,
+          unansweredCount: parsedData.summary?.unansweredCount ?? questions.filter((q: QuestionEntry) => q.status === "UNANSWERED").length,
+          outOfOrderCount: parsedData.summary?.outOfOrderCount ?? outOfOrderCount,
+          totalQuestions: parsedData.summary?.totalQuestions ?? questions.length,
+          overallFeedback: parsedData.summary?.overallFeedback || "Assessment processed successfully.",
+          strengths: parsedData.summary?.strengths || [],
+          weaknesses: parsedData.summary?.weaknesses || [],
+          teacherRecommendation: parsedData.summary?.teacherRecommendation || "Review individual questions above.",
+        },
+      };
 
     return NextResponse.json({ success: true, data: assessmentResult });
   } catch (error: any) {

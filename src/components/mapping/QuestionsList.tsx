@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { QuestionEntry, UnmatchedAnswer } from "@/types/assessment";
 import { QuestionCard } from "./QuestionCard";
 import { Sparkles, HelpCircle, AlertTriangle, Eye } from "lucide-react";
@@ -21,6 +21,15 @@ export function QuestionsList({
     // By default, expand active question (e.g. Q2) matching Figma
     "q-2": true,
   });
+
+  // Smoothly scroll active question card into view when selected from answer sheet
+  useEffect(() => {
+    if (!activeQuestionId) return;
+    const cardEl = document.getElementById(`question-card-${activeQuestionId}`);
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [activeQuestionId]);
 
   const handleToggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AssessmentResult } from "@/types/assessment";
 import { QuestionsList } from "./QuestionsList";
 import { AnswerSheetViewer } from "@/components/viewer/AnswerSheetViewer";
@@ -16,6 +16,34 @@ export function MappingView({
 }: MappingViewProps) {
   const [leftWidthPercent, setLeftWidthPercent] = useState<number>(42);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // Keyboard shortcut navigation (ArrowUp/Down, J/K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      const allIds = assessment.questions.map((q) => q.id);
+      const currentIndex = allIds.findIndex((id) => id === activeQuestionId);
+
+      if (e.key === "ArrowDown" || e.key === "j" || e.key === "J") {
+        e.preventDefault();
+        const nextIndex = currentIndex < allIds.length - 1 ? currentIndex + 1 : 0;
+        onSelectQuestion(allIds[nextIndex]);
+      } else if (e.key === "ArrowUp" || e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : allIds.length - 1;
+        onSelectQuestion(allIds[prevIndex]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [assessment.questions, activeQuestionId, onSelectQuestion]);
 
   const handleMouseDown = () => {
     setIsDragging(true);

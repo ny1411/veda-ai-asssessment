@@ -60,21 +60,41 @@ export function getScoreBadgeVariant(awarded: number, max: number): {
 }
 
 /**
- * Converts normalized 0-1000 bounding box coordinates to CSS percentage positioning
+ * Converts bounding box coordinates (SVG pixels 800x1100, normalized 0-1000, or 0-100%) to CSS percentage positioning
  */
-export function boundingBoxToPercentages(box: BoundingBox): {
+export function boundingBoxToPercentages(
+  box: BoundingBox,
+  pageWidth = 800,
+  pageHeight = 1100
+): {
   top: string;
   left: string;
   width: string;
   height: string;
 } {
-  // If coordinates are already 0-100 scale or 0-1000 scale:
-  const scale = box.ymax > 100 ? 1000 : 100;
-  
-  const top = (box.ymin / scale) * 100;
-  const left = (box.xmin / scale) * 100;
-  const width = ((box.xmax - box.xmin) / scale) * 100;
-  const height = ((box.ymax - box.ymin) / scale) * 100;
+  // If coordinates are 0-100 percentage values
+  if (box.ymax <= 100 && box.xmax <= 100) {
+    const top = box.ymin;
+    const left = box.xmin;
+    const width = box.xmax - box.xmin;
+    const height = box.ymax - box.ymin;
+    return {
+      top: `${Math.max(0, Math.min(100, top))}%`,
+      left: `${Math.max(0, Math.min(100, left))}%`,
+      width: `${Math.max(2, Math.min(100, width))}%`,
+      height: `${Math.max(2, Math.min(100, height))}%`,
+    };
+  }
+
+  // If coordinates are in SVG / Document pixel space (width 800, height 1100)
+  const isSvgPixelSpace = box.ymax > 1000 || (box.xmax <= 800 && box.ymax <= 1100);
+  const scaleY = isSvgPixelSpace ? pageHeight : 1000;
+  const scaleX = isSvgPixelSpace ? pageWidth : 1000;
+
+  const top = (box.ymin / scaleY) * 100;
+  const left = (box.xmin / scaleX) * 100;
+  const width = ((box.xmax - box.xmin) / scaleX) * 100;
+  const height = ((box.ymax - box.ymin) / scaleY) * 100;
 
   return {
     top: `${Math.max(0, Math.min(100, top))}%`,

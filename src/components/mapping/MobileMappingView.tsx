@@ -89,7 +89,7 @@ export function MobileMappingView({
             )}
           </div>
         ) : (
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col relative">
             <AnswerSheetViewer
               pages={assessment.pageImages}
               questions={assessment.questions}
@@ -97,6 +97,28 @@ export function MobileMappingView({
               activeQuestionId={activeQuestionId}
               onSelectQuestion={onSelectQuestion}
             />
+
+            {/* Quick Floating Jump Bar back to Question on Mobile */}
+            {activeQuestion && (
+              <div className="absolute bottom-3 left-2 right-2 p-3 bg-gray-900/95 backdrop-blur-md text-white rounded-2xl shadow-xl flex items-center justify-between z-30 border border-gray-700 animate-in slide-in-from-bottom duration-200">
+                <div className="flex items-center space-x-2 truncate">
+                  <span className="w-6 h-6 rounded-full bg-[#FF5722] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {activeQuestion.questionNumber}
+                  </span>
+                  <span className="text-xs font-medium text-gray-200 truncate">
+                    Q{activeQuestion.fullLabel}: {activeQuestion.questionText}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("QUESTIONS")}
+                  className="px-3 py-1.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold flex items-center space-x-1 flex-shrink-0 ml-2"
+                >
+                  <span>Questions</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

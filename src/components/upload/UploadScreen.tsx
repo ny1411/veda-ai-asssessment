@@ -3,6 +3,7 @@ import { Upload, ArrowRight, X, Sparkles, FileText, CheckCircle2 } from "lucide-
 import { TeacherIllustration } from "@/components/icons/TeacherIllustration";
 import { UploadedFileInfo } from "@/types/assessment";
 import { formatFileSize } from "@/lib/utils";
+import { processUploadedFileToImages } from "@/lib/file-converter";
 
 interface UploadScreenProps {
   questionPaper: UploadedFileInfo | null;
@@ -28,52 +29,66 @@ export function UploadScreen({
 
   const canStart = Boolean(questionPaper && answerSheet);
 
-  const handleQpFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleProcessQpFile = async (file: File) => {
+    onQuestionPaperSelected(file, {
+      name: file.name,
+      sizeFormatted: formatFileSize(file.size),
+      pageCount: file.type.includes("pdf") ? 2 : 1,
+    });
+    try {
+      const { pageImages, pageCount } = await processUploadedFileToImages(file);
       onQuestionPaperSelected(file, {
         name: file.name,
         sizeFormatted: formatFileSize(file.size),
-        pageCount: file.type.includes("pdf") ? 2 : 1,
+        pageCount: Math.max(1, pageCount),
+        dataBase64List: pageImages,
       });
+    } catch (err) {
+      console.warn("Could not extract PDF pages ahead of time:", err);
     }
+  };
+
+  const handleProcessAsFile = async (file: File) => {
+    onAnswerSheetSelected(file, {
+      name: file.name,
+      sizeFormatted: formatFileSize(file.size),
+      pageCount: file.type.includes("pdf") ? 4 : 1,
+    });
+    try {
+      const { pageImages, pageCount } = await processUploadedFileToImages(file);
+      onAnswerSheetSelected(file, {
+        name: file.name,
+        sizeFormatted: formatFileSize(file.size),
+        pageCount: Math.max(1, pageCount),
+        dataBase64List: pageImages,
+      });
+    } catch (err) {
+      console.warn("Could not extract PDF pages ahead of time:", err);
+    }
+  };
+
+  const handleQpFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleProcessQpFile(file);
   };
 
   const handleAsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      onAnswerSheetSelected(file, {
-        name: file.name,
-        sizeFormatted: formatFileSize(file.size),
-        pageCount: file.type.includes("pdf") ? 4 : 1,
-      });
-    }
+    if (file) handleProcessAsFile(file);
   };
 
   const handleDropQp = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOverQp(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      onQuestionPaperSelected(file, {
-        name: file.name,
-        sizeFormatted: formatFileSize(file.size),
-        pageCount: file.type.includes("pdf") ? 2 : 1,
-      });
-    }
+    if (file) handleProcessQpFile(file);
   };
 
   const handleDropAs = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOverAs(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      onAnswerSheetSelected(file, {
-        name: file.name,
-        sizeFormatted: formatFileSize(file.size),
-        pageCount: file.type.includes("pdf") ? 4 : 1,
-      });
-    }
+    if (file) handleProcessAsFile(file);
   };
 
   return (

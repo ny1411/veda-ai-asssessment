@@ -24,6 +24,7 @@ export function QuestionCard({
 
   return (
     <div
+      id={`question-card-${question.id}`}
       onClick={onSelect}
       className={`group relative rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden ${
         isActive

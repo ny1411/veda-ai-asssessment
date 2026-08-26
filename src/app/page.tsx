@@ -30,6 +30,7 @@ export default function Home() {
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [isGradingModalOpen, setIsGradingModalOpen] = useState(false);
   const [isTeacherToolkitOpen, setIsTeacherToolkitOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [apiKey, setApiKey] = useState<string>("");
 
   // Loading animation state
@@ -75,43 +76,95 @@ export default function Home() {
     setActiveQuestionId("q-2");
   };
 
-  // Start Mapping Trigger with realistic progress stages
+  // Start Mapping Trigger with realistic progress stages and live API support
   const handleStartMapping = async () => {
     setScreenState("loading");
     setSidebarCollapsed(true); // Collapse sidebar in loading state matching Figma
 
-    // If no assessment loaded yet, load or process
-    let currentAssessment = assessment;
-    if (!currentAssessment) {
-      currentAssessment = getMockAssessmentResult();
-      setAssessment(currentAssessment);
+    try {
+      // 1. Stage 1: Document Ingestion
+      setLoadingStage(1);
+      setLoadingPercent(20);
+      setStageTitle("Document Ingestion & Multi-page Rendering...");
+
+      let qpImages: string[] = questionPaper?.dataBase64List || [];
+      let asImages: string[] = answerSheet?.dataBase64List || [];
+
+      if (questionPaper?.file && qpImages.length === 0) {
+        const res = await processUploadedFileToImages(questionPaper.file);
+        qpImages = res.pageImages;
+      }
+      if (answerSheet?.file && asImages.length === 0) {
+        const res = await processUploadedFileToImages(answerSheet.file);
+        asImages = res.pageImages;
+      }
+
+      // Check if custom files or API key is used
+      const isCustomFile = Boolean(questionPaper?.file || answerSheet?.file);
+      let apiCallPromise: Promise<any> | null = null;
+
+      if (isCustomFile && (qpImages.length > 0 || asImages.length > 0)) {
+        apiCallPromise = fetch("/api/process-assessment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionPaperImages: qpImages,
+            answerSheetImages: asImages,
+            apiKey: apiKey || undefined,
+            isDemo: false,
+          }),
+        }).then((res) => res.json()).catch((err) => {
+          console.warn("API call error:", err);
+          return null;
+        });
+      }
+
+      await new Promise((r) => setTimeout(r, 650));
+
+      // 2. Stage 2: Question Extraction
+      setLoadingStage(2);
+      setLoadingPercent(50);
+      setStageTitle("Extracting Question Paper & Sub-parts (11a, 11b)...");
+
+      await new Promise((r) => setTimeout(r, 750));
+
+      // 3. Stage 3: OCR & Coordinates
+      setLoadingStage(3);
+      setLoadingPercent(80);
+      setStageTitle("OCR Transcribing Handwriting & Coordinate Bounding Boxes...");
+
+      await new Promise((r) => setTimeout(r, 700));
+
+      // 4. Stage 4: AI Evaluation
+      setLoadingStage(4);
+      setLoadingPercent(100);
+      setStageTitle("Synthesizing AI Marks & Pedagogical Feedback...");
+
+      let finalAssessment: AssessmentResult | null = null;
+
+      if (apiCallPromise) {
+        const apiResult = await apiCallPromise;
+        if (apiResult?.success && apiResult?.data) {
+          finalAssessment = apiResult.data;
+        }
+      }
+
+      if (!finalAssessment) {
+        finalAssessment = assessment || getMockAssessmentResult();
+      }
+
+      setAssessment(finalAssessment);
+      await new Promise((r) => setTimeout(r, 500));
+
+      // Transition to Split Mapping View
+      setScreenState("mapping");
+      setActiveQuestionId("q-2");
+    } catch (error) {
+      console.error("Mapping execution error:", error);
+      setAssessment(getMockAssessmentResult());
+      setScreenState("mapping");
+      setActiveQuestionId("q-2");
     }
-
-    // Realistic multi-stage extraction animation
-    setLoadingStage(1);
-    setLoadingPercent(20);
-    setStageTitle("Document Ingestion & Multi-page Rendering...");
-
-    await new Promise((r) => setTimeout(r, 650));
-    setLoadingStage(2);
-    setLoadingPercent(50);
-    setStageTitle("Extracting Question Paper & Sub-parts (11a, 11b)...");
-
-    await new Promise((r) => setTimeout(r, 750));
-    setLoadingStage(3);
-    setLoadingPercent(80);
-    setStageTitle("OCR Transcribing Handwriting & Coordinate Bounding Boxes...");
-
-    await new Promise((r) => setTimeout(r, 700));
-    setLoadingStage(4);
-    setLoadingPercent(100);
-    setStageTitle("Synthesizing AI Marks & Pedagogical Feedback...");
-
-    await new Promise((r) => setTimeout(r, 550));
-
-    // Transition to Split Mapping View
-    setScreenState("mapping");
-    setActiveQuestionId("q-2");
   };
 
   const handleBackToUpload = () => {
@@ -152,6 +205,7 @@ export default function Home() {
           }
           onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
           onOpenGradingModal={() => setIsGradingModalOpen(true)}
+          onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
           hasApiKey={Boolean(apiKey)}
           scoreSummary={screenState === "mapping" ? scoreSummary : undefined}
         />
@@ -249,6 +303,27 @@ export default function Home() {
         isOpen={isTeacherToolkitOpen}
         onClose={() => setIsTeacherToolkitOpen(false)}
       />
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-[280px] h-full bg-white shadow-2xl flex flex-col justify-between animate-in slide-in-from-left duration-200 z-10">
+            <Sidebar
+              collapsed={false}
+              activeItem="Exams"
+              onOpenTeacherToolkit={() => {
+                setIsTeacherToolkitOpen(true);
+                setIsMobileMenuOpen(false);
+              }}
+              onToggleCollapse={() => setIsMobileMenuOpen(false)}
+            />
+          </div>
+          <div
+            className="flex-1 h-full cursor-pointer"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -214,42 +214,42 @@ export interface AssessmentResult {
 ```
 Phase 1: Project Setup & Core Foundation
 ├── [x] Initialize Next.js 16 (Turbopack, TypeScript, Tailwind CSS v4, ESLint)
-├── [x] Install dependencies: lucide-react, framer-motion, clsx, tailwind-merge, @google/generative-ai, canvas-confetti
-├── [ ] Setup Tailwind color tokens, typography (Geist/Inter font), and global CSS utility styles
-└── [ ] Create TypeScript types and mock data models (`src/types/assessment.ts`)
+├── [x] Install dependencies: lucide-react, framer-motion, clsx, tailwind-merge, @google/generative-ai, canvas-confetti, pdfjs-dist
+├── [x] Setup Tailwind color tokens, typography (Geist/Inter font), and global CSS utility styles
+└── [x] Create TypeScript types and mock data models (`src/types/assessment.ts`)
 
 Phase 2: UI Shell & Navigation Components
-├── [ ] Sidebar Component (`src/components/layout/Sidebar.tsx`): Expanded & Collapsed modes, DPS School badge, AI Toolkit button
-├── [ ] Header Component (`src/components/layout/Header.tsx`): Breadcrumbs, avatar, notifications, AI sparkle
-└── [ ] Layout wrapper with responsive mobile support
+├── [x] Sidebar Component (`src/components/layout/Sidebar.tsx`): Expanded & Collapsed modes, DPS School badge, AI Toolkit button
+├── [x] Header Component (`src/components/layout/Header.tsx`): Breadcrumbs, avatar, notifications, AI sparkle, mobile menu button
+└── [x] Layout wrapper with responsive mobile drawer support
 
 Phase 3: Upload & Processing State
-├── [ ] Upload Screen (`src/components/upload/UploadScreen.tsx`): Dotted dropzones, file drag & drop, file preview cards, 3D teacher badge
-├── [ ] Preloaded Demo Sample Loader (1-click load for Class 10 Biology Test matching Figma)
-└── [ ] Animated Loading Screen (`src/components/processing/LoadingScreen.tsx`): Rotating 4-star sparkle, progress bar & stage steps
+├── [x] Upload Screen (`src/components/upload/UploadScreen.tsx`): Dotted dropzones, file drag & drop, file preview cards, 3D teacher badge
+├── [x] Preloaded Demo Sample Loader (1-click load for Class 10 Biology Test matching Figma)
+└── [x] Animated Loading Screen (`src/components/processing/LoadingScreen.tsx`): Rotating 4-star sparkle, progress bar & stage steps
 
 Phase 4: Client-side Document Rendering & PDF Engine
-├── [ ] PDF / Image Canvas Engine (`src/components/viewer/DocumentCanvas.tsx`): High-res multi-page rendering, zoom controls, fit-to-width
-└── [ ] SVG Coordinate Bounding Box Overlay (`src/components/viewer/BoundingBoxOverlay.tsx`): Normalized coordinate mapping, green bounding boxes, Q# pills, click/hover handlers
+├── [x] PDF / Image Canvas Engine (`src/components/viewer/DocumentCanvas.tsx`): High-res multi-page rendering, zoom controls, fit-to-width
+└── [x] SVG Coordinate Bounding Box Overlay (`src/components/viewer/BoundingBoxOverlay.tsx`): Normalized coordinate mapping, green bounding boxes, Q# pills, click/hover handlers
 
 Phase 5: Question-Answer Mapping & Split View
-├── [ ] Split View Container (`src/components/mapping/MappingView.tsx`) with draggable resizer divider
-├── [ ] Extracted Questions List (`src/components/mapping/QuestionsList.tsx`): Number badges, score pills, sub-part support (`11 a.`, `11 b.`), filter tabs, expand/collapse all
-├── [ ] Question Card with Collapsible AI Feedback accordion (`src/components/mapping/QuestionCard.tsx`)
-├── [ ] Two-way synchronization: Click question -> scroll & highlight answer; click answer -> highlight question
-└── [ ] Mobile View Toggle (`src/components/mapping/MobileMappingView.tsx`): `[Questions | Answer Sheet]` segmented switch
+├── [x] Split View Container (`src/components/mapping/MappingView.tsx`) with draggable resizer divider & keyboard shortcuts
+├── [x] Extracted Questions List (`src/components/mapping/QuestionsList.tsx`): Number badges, score pills, sub-part support (`11 a.`, `11 b.`), filter tabs, expand/collapse all
+├── [x] Question Card with Collapsible AI Feedback accordion (`src/components/mapping/QuestionCard.tsx`)
+├── [x] Two-way synchronization: Click question -> scroll & highlight answer; click answer -> highlight question
+└── [x] Mobile View Toggle (`src/components/mapping/MobileMappingView.tsx`): `[Questions | Answer Sheet]` segmented switch with floating quick-jump bar
 
 Phase 6: AI Extraction & Mapping Backend Pipeline
-├── [ ] Server Route `/api/process-assessment`: Ingests question paper & answer sheet images
-├── [ ] Gemini 2.0 / 1.5 Flash Vision Multimodal integration with structured JSON schema output
-├── [ ] Coordinate normalization & bounding box calculator
-└── [ ] Fallback in-memory smart engine for zero-config offline / mock execution
+├── [x] Server Route `/api/process-assessment`: Ingests question paper & answer sheet images
+├── [x] Gemini 2.0 / 1.5 Flash Vision Multimodal integration with structured JSON schema output
+├── [x] Coordinate normalization & bounding box calculator
+└── [x] Fallback in-memory smart engine for zero-config offline / mock execution
 
 Phase 7: Grading Insights & Edge Case Polish
-├── [ ] Overall Grading Summary Modal (`src/components/grading/GradingSummaryModal.tsx`) with score chart, strengths, areas to improve, and report export
-├── [ ] Unmatched Answers Drawer & Unanswered Question Banners
-├── [ ] API Key configuration modal (allows entering personal Google Gemini key or using default)
-└── [ ] Unit tests, build validation, and deployment preparation
+├── [x] Overall Grading Summary Modal (`src/components/grading/GradingSummaryModal.tsx`) with score chart, strengths, areas to improve, and report export
+├── [x] Unmatched Answers Drawer & Unanswered Question Banners
+├── [x] API Key configuration modal (allows entering personal Google Gemini key or using default)
+└── [x] Production build validation and deployment readiness
 ```
 
 ---

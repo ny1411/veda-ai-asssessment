@@ -9,7 +9,7 @@ import {
   FileQuestion,
 } from "lucide-react";
 import { AnswerSheetPage, QuestionEntry, UnmatchedAnswer } from "@/types/assessment";
-import { BoundingBoxOverlay } from "./BoundingBoxOverlay";
+import { DocumentCanvas } from "./DocumentCanvas";
 
 interface AnswerSheetViewerProps {
   pages: AnswerSheetPage[];
@@ -262,36 +262,14 @@ export function AnswerSheetViewer({
         className="flex-1 overflow-y-auto overflow-x-auto p-4 md:p-8 flex flex-col items-center space-y-8 bg-[#12161C]"
       >
         {pages.map((page) => (
-          <div
+          <DocumentCanvas
             key={page.pageNumber}
-            id={`page-card-${page.pageNumber}`}
-            style={{
-              width: `${Math.round(800 * (zoomLevel / 100))}px`,
-              maxWidth: "100%",
-            }}
-            className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-300 transition-all duration-150 select-none"
-          >
-            {/* Answer Page Image / SVG */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={page.imageUrl}
-              alt={`Answer Sheet Page ${page.pageNumber}`}
-              className="w-full h-auto block pointer-events-none"
-            />
-
-            {/* Bounding Box Highlighting Overlay */}
-            <BoundingBoxOverlay
-              pageNumber={page.pageNumber}
-              activeQuestionId={activeQuestionId}
-              boxes={allBoxes}
-              onSelectQuestion={onSelectQuestion}
-            />
-
-            {/* Subtle Page Badge at Corner */}
-            <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-gray-900/60 backdrop-blur-xs text-white text-[10px] font-bold font-mono">
-              Page {page.pageNumber} / {pages.length}
-            </div>
-          </div>
+            page={page}
+            zoomLevel={zoomLevel}
+            activeQuestionId={activeQuestionId}
+            boxes={allBoxes}
+            onSelectQuestion={onSelectQuestion}
+          />
         ))}
 
         {/* End of Sheet Marker */}
