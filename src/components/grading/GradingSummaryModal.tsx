@@ -2,14 +2,11 @@ import React from "react";
 import {
   Award,
   CheckCircle2,
-  AlertCircle,
   TrendingUp,
   Download,
   Printer,
   X,
   Sparkles,
-  BarChart2,
-  FileCheck,
   BookOpen,
 } from "lucide-react";
 import { AssessmentSummary, QuestionEntry } from "@/types/assessment";

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getMockAssessmentResult } from "@/lib/mock-data";
-import { AssessmentResult, QuestionEntry, UnmatchedAnswer } from "@/types/assessment";
+import { AssessmentResult, QuestionEntry } from "@/types/assessment";
 
 export async function POST(req: NextRequest) {
   try {
@@ -185,7 +185,7 @@ Return a STRICT JSON object matching this schema:
       };
 
     return NextResponse.json({ success: true, data: assessmentResult });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI assessment processing error:", error);
     // Graceful fallback to mock data with warning
     const fallbackMock = getMockAssessmentResult();
@@ -193,7 +193,7 @@ Return a STRICT JSON object matching this schema:
       success: true,
       data: fallbackMock,
       warning: "Model processing encountered a rate limit or format issue; delivered via standard verified dataset.",
-      errorDetails: error?.message,
+      errorDetails: error instanceof Error ? error.message : String(error),
     });
   }
 }

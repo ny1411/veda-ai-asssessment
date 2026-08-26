@@ -53,9 +53,14 @@ export function LoadingScreen({
         </div>
 
         {/* Current status detail */}
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <span className="font-semibold text-gray-900">{stageTitle}</span>
-          <span className="font-mono font-bold text-orange-600">{progressPercent}%</span>
+        <div className="flex flex-col space-y-0.5">
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            <span className="font-semibold text-gray-900">{stageTitle}</span>
+            <span className="font-mono font-bold text-orange-600">{progressPercent}%</span>
+          </div>
+          {stageDescription && (
+            <span className="text-[11px] text-gray-400">{stageDescription}</span>
+          )}
         </div>
 
         {/* Step Items */}

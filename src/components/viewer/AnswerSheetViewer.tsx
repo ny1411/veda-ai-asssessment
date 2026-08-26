@@ -76,10 +76,10 @@ export function AnswerSheetViewer({
     }
 
     const firstBox = activeQuestion.matchedAnswer.boundingBoxes[0];
-    setCurrentPage(firstBox.pageNumber);
 
     // Give DOM time to render page and coordinates
     const timer = setTimeout(() => {
+      setCurrentPage(firstBox.pageNumber);
       const elementId = `box-${activeQuestion.id}-p${firstBox.pageNumber}`;
       const element = document.getElementById(elementId);
 

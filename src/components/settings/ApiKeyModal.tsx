@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { KeyRound, Check, X, ExternalLink, ShieldCheck, Sparkles } from "lucide-react";
 
 interface ApiKeyModalProps {
@@ -16,10 +16,6 @@ export function ApiKeyModal({
 }: ApiKeyModalProps) {
   const [inputKey, setInputKey] = useState(apiKey);
   const [savedSuccess, setSavedSuccess] = useState(false);
-
-  useEffect(() => {
-    setInputKey(apiKey);
-  }, [apiKey]);
 
   if (!isOpen) return null;
 

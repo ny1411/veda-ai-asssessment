@@ -9,7 +9,6 @@ import {
   Sparkles,
   ChevronRight,
   PanelLeftClose,
-  PanelLeftOpen,
 } from "lucide-react";
 import { VedaLogoIcon, SchoolCrestIcon } from "@/components/icons/VedaLogo";
 import { cn } from "@/lib/utils";

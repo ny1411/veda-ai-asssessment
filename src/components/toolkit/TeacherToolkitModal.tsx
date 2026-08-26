@@ -2,12 +2,7 @@ import React, { useState } from "react";
 import {
   Sparkles,
   X,
-  FileSpreadsheet,
-  CheckCircle,
-  HelpCircle,
   BrainCircuit,
-  Sliders,
-  Layers,
 } from "lucide-react";
 
 interface TeacherToolkitModalProps {

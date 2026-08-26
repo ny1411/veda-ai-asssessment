@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { QuestionEntry, UnmatchedAnswer } from "@/types/assessment";
 import { QuestionCard } from "./QuestionCard";
-import { Sparkles, HelpCircle, AlertTriangle, Eye } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 interface QuestionsListProps {
   questions: QuestionEntry[];

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { UploadScreen } from "@/components/upload/UploadScreen";
@@ -31,22 +31,21 @@ export default function Home() {
   const [isGradingModalOpen, setIsGradingModalOpen] = useState(false);
   const [isTeacherToolkitOpen, setIsTeacherToolkitOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [apiKey, setApiKey] = useState<string>("");
+  const [apiKey, setApiKey] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("veda_gemini_api_key") || "";
+      } catch {
+        return "";
+      }
+    }
+    return "";
+  });
 
   // Loading animation state
   const [loadingStage, setLoadingStage] = useState(1);
   const [loadingPercent, setLoadingPercent] = useState(15);
   const [stageTitle, setStageTitle] = useState("Ingesting document pages...");
-
-  // Load API key from local storage on mount
-  useEffect(() => {
-    try {
-      const savedKey = localStorage.getItem("veda_gemini_api_key");
-      if (savedKey) setApiKey(savedKey);
-    } catch {
-      // ignore
-    }
-  }, []);
 
   const handleSaveApiKey = (newKey: string) => {
     setApiKey(newKey);
@@ -101,7 +100,7 @@ export default function Home() {
 
       // Check if custom files or API key is used
       const isCustomFile = Boolean(questionPaper?.file || answerSheet?.file);
-      let apiCallPromise: Promise<any> | null = null;
+      let apiCallPromise: Promise<{ success?: boolean; data?: AssessmentResult } | null> | null = null;
 
       if (isCustomFile && (qpImages.length > 0 || asImages.length > 0)) {
         apiCallPromise = fetch("/api/process-assessment", {

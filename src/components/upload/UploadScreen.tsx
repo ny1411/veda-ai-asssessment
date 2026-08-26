@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Upload, ArrowRight, X, Sparkles, FileText, CheckCircle2 } from "lucide-react";
+import { Upload, ArrowRight, X, Sparkles } from "lucide-react";
 import { TeacherIllustration } from "@/components/icons/TeacherIllustration";
 import { UploadedFileInfo } from "@/types/assessment";
 import { formatFileSize } from "@/lib/utils";
