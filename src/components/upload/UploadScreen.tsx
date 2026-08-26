@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Upload, ArrowRight, X, Sparkles } from "lucide-react";
+import { Upload, ArrowRight, X, Sparkles, AlertCircle, KeyRound } from "lucide-react";
 import { TeacherIllustration } from "@/components/icons/TeacherIllustration";
 import { UploadedFileInfo } from "@/types/assessment";
 import { formatFileSize } from "@/lib/utils";
@@ -8,6 +8,9 @@ import { processUploadedFileToImages } from "@/lib/file-converter";
 interface UploadScreenProps {
   questionPaper: UploadedFileInfo | null;
   answerSheet: UploadedFileInfo | null;
+  errorMessage?: string | null;
+  onClearError?: () => void;
+  onOpenApiKeyModal?: () => void;
   onQuestionPaperSelected: (file: File | null, info?: Partial<UploadedFileInfo>) => void;
   onAnswerSheetSelected: (file: File | null, info?: Partial<UploadedFileInfo>) => void;
   onStartMapping: () => void;
@@ -17,6 +20,9 @@ interface UploadScreenProps {
 export function UploadScreen({
   questionPaper,
   answerSheet,
+  errorMessage,
+  onClearError,
+  onOpenApiKeyModal,
   onQuestionPaperSelected,
   onAnswerSheetSelected,
   onStartMapping,
@@ -28,8 +34,10 @@ export function UploadScreen({
   const [dragOverAs, setDragOverAs] = useState(false);
 
   const canStart = Boolean(questionPaper && answerSheet);
+  const isApiKeyError = errorMessage?.toLowerCase().includes("api key") || errorMessage?.toLowerCase().includes("gemini");
 
   const handleProcessQpFile = async (file: File) => {
+    if (onClearError) onClearError();
     onQuestionPaperSelected(file, {
       name: file.name,
       sizeFormatted: formatFileSize(file.size),
@@ -49,6 +57,7 @@ export function UploadScreen({
   };
 
   const handleProcessAsFile = async (file: File) => {
+    if (onClearError) onClearError();
     onAnswerSheetSelected(file, {
       name: file.name,
       sizeFormatted: formatFileSize(file.size),
@@ -105,6 +114,38 @@ export function UploadScreen({
           Upload both files to get started
         </p>
       </div>
+
+      {/* Prominent Error Banner if API or processing failed */}
+      {errorMessage && (
+        <div className="w-full max-w-3xl mb-6 p-4 rounded-2xl bg-red-50/90 border border-red-200 text-red-900 flex items-start justify-between shadow-sm animate-in fade-in duration-200">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-red-900">{errorMessage}</p>
+              {isApiKeyError && onOpenApiKeyModal && (
+                <button
+                  type="button"
+                  onClick={onOpenApiKeyModal}
+                  className="mt-1 inline-flex items-center space-x-1.5 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Configure Gemini API Key</span>
+                </button>
+              )}
+            </div>
+          </div>
+          {onClearError && (
+            <button
+              type="button"
+              onClick={onClearError}
+              className="text-red-400 hover:text-red-700 p-1 rounded-lg hover:bg-red-100 transition-colors"
+              title="Dismiss alert"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Orbiting Teacher Illustration */}
       <div className="mb-6 md:mb-8 flex justify-center">
@@ -168,6 +209,7 @@ export function UploadScreen({
                 onClick={(e) => {
                   e.stopPropagation();
                   onQuestionPaperSelected(null);
+                  if (onClearError) onClearError();
                   if (qpInputRef.current) qpInputRef.current.value = "";
                 }}
                 className="absolute right-3 top-3 w-6 h-6 rounded-full bg-gray-700 hover:bg-gray-900 text-white flex items-center justify-center transition-transform hover:scale-110"
@@ -231,6 +273,7 @@ export function UploadScreen({
                 onClick={(e) => {
                   e.stopPropagation();
                   onAnswerSheetSelected(null);
+                  if (onClearError) onClearError();
                   if (asInputRef.current) asInputRef.current.value = "";
                 }}
                 className="absolute right-3 top-3 w-6 h-6 rounded-full bg-gray-700 hover:bg-gray-900 text-white flex items-center justify-center transition-transform hover:scale-110"

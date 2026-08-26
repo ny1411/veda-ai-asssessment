@@ -25,6 +25,8 @@ export default function Home() {
   const [answerSheet, setAnswerSheet] = useState<UploadedFileInfo | null>(null);
   const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>("q-2");
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Modals state
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -54,10 +56,15 @@ export default function Home() {
     } catch {
       // ignore
     }
+    if (newKey) {
+      setErrorMessage(null);
+    }
   };
 
-  // Load preloaded Class 10 Biology Sample (matching Figma)
+  // Load preloaded Class 10 Biology Sample (matching Figma benchmark)
   const handleLoadSample = () => {
+    setIsDemoMode(true);
+    setErrorMessage(null);
     const mock = getMockAssessmentResult();
     setQuestionPaper({
       file: null,
@@ -75,94 +82,139 @@ export default function Home() {
     setActiveQuestionId("q-2");
   };
 
-  // Start Mapping Trigger with realistic progress stages and live API support
+  // Start Mapping Trigger with realistic progress stages and live AI pipeline
   const handleStartMapping = async () => {
+    setErrorMessage(null);
+
+    // Explicit Demo Flow
+    if (isDemoMode) {
+      setScreenState("loading");
+      setSidebarCollapsed(true);
+
+      setLoadingStage(1);
+      setLoadingPercent(20);
+      setStageTitle("Document Ingestion & Multi-page Rendering...");
+      await new Promise((r) => setTimeout(r, 500));
+
+      setLoadingStage(2);
+      setLoadingPercent(50);
+      setStageTitle("Extracting Question Paper & Sub-parts (11a, 11b)...");
+      await new Promise((r) => setTimeout(r, 600));
+
+      setLoadingStage(3);
+      setLoadingPercent(80);
+      setStageTitle("OCR Transcribing Handwriting & Coordinate Bounding Boxes...");
+      await new Promise((r) => setTimeout(r, 500));
+
+      setLoadingStage(4);
+      setLoadingPercent(100);
+      setStageTitle("Synthesizing AI Marks & Pedagogical Feedback...");
+      await new Promise((r) => setTimeout(r, 400));
+
+      const mock = getMockAssessmentResult();
+      setAssessment(mock);
+      setActiveQuestionId("q-2");
+      setScreenState("mapping");
+      return;
+    }
+
+    // Live AI Processing for Custom Uploaded Files
+    if (!questionPaper?.file || !answerSheet?.file) {
+      setErrorMessage("Please upload both a Question Paper and an Answer Sheet to proceed.");
+      return;
+    }
+
+    // Clear stale assessment state before new run
+    setAssessment(null);
     setScreenState("loading");
-    setSidebarCollapsed(true); // Collapse sidebar in loading state matching Figma
+    setSidebarCollapsed(true);
 
     try {
-      // 1. Stage 1: Document Ingestion
+      // 1. Stage 1: Document Ingestion & Page Rendering
       setLoadingStage(1);
       setLoadingPercent(20);
       setStageTitle("Document Ingestion & Multi-page Rendering...");
 
-      let qpImages: string[] = questionPaper?.dataBase64List || [];
-      let asImages: string[] = answerSheet?.dataBase64List || [];
+      let qpImages: string[] = questionPaper.dataBase64List || [];
+      let asImages: string[] = answerSheet.dataBase64List || [];
 
-      if (questionPaper?.file && qpImages.length === 0) {
+      if (qpImages.length === 0 && questionPaper.file) {
         const res = await processUploadedFileToImages(questionPaper.file);
         qpImages = res.pageImages;
       }
-      if (answerSheet?.file && asImages.length === 0) {
+      if (asImages.length === 0 && answerSheet.file) {
         const res = await processUploadedFileToImages(answerSheet.file);
         asImages = res.pageImages;
       }
 
-      // Check if custom files or API key is used
-      const isCustomFile = Boolean(questionPaper?.file || answerSheet?.file);
-      let apiCallPromise: Promise<{ success?: boolean; data?: AssessmentResult } | null> | null = null;
-
-      if (isCustomFile && (qpImages.length > 0 || asImages.length > 0)) {
-        apiCallPromise = fetch("/api/process-assessment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            questionPaperImages: qpImages,
-            answerSheetImages: asImages,
-            apiKey: apiKey || undefined,
-            isDemo: false,
-          }),
-        }).then((res) => res.json()).catch((err) => {
-          console.warn("API call error:", err);
-          return null;
-        });
+      if (qpImages.length === 0 || asImages.length === 0) {
+        throw new Error("Could not extract pages from the uploaded documents. Please check file format.");
       }
 
-      await new Promise((r) => setTimeout(r, 650));
+      // Initiate backend AI processing
+      const apiCallPromise = fetch("/api/process-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionPaperImages: qpImages,
+          answerSheetImages: asImages,
+          apiKey: apiKey || undefined,
+          isDemo: false,
+        }),
+      });
 
-      // 2. Stage 2: Question Extraction
+      await new Promise((r) => setTimeout(r, 600));
+
+      // 2. Stage 2: Question Paper Parsing
       setLoadingStage(2);
       setLoadingPercent(50);
       setStageTitle("Extracting Question Paper & Sub-parts (11a, 11b)...");
 
-      await new Promise((r) => setTimeout(r, 750));
+      await new Promise((r) => setTimeout(r, 700));
 
-      // 3. Stage 3: OCR & Coordinates
+      // 3. Stage 3: OCR Transcription & Coordinates
       setLoadingStage(3);
       setLoadingPercent(80);
       setStageTitle("OCR Transcribing Handwriting & Coordinate Bounding Boxes...");
 
-      await new Promise((r) => setTimeout(r, 700));
+      // Wait for AI backend response
+      const res = await apiCallPromise;
+      const apiResult = await res.json().catch(() => null);
 
-      // 4. Stage 4: AI Evaluation
+      if (!res.ok || !apiResult?.success || !apiResult?.data) {
+        const errorText =
+          apiResult?.error ||
+          (apiResult?.code === "MISSING_API_KEY"
+            ? "AI processing is not configured. Please add your Gemini API key."
+            : "Failed to process assessment with AI.");
+        throw new Error(errorText);
+      }
+
+      // 4. Stage 4: AI Marks & Synthesis
       setLoadingStage(4);
       setLoadingPercent(100);
       setStageTitle("Synthesizing AI Marks & Pedagogical Feedback...");
-
-      let finalAssessment: AssessmentResult | null = null;
-
-      if (apiCallPromise) {
-        const apiResult = await apiCallPromise;
-        if (apiResult?.success && apiResult?.data) {
-          finalAssessment = apiResult.data;
-        }
-      }
-
-      if (!finalAssessment) {
-        finalAssessment = assessment || getMockAssessmentResult();
-      }
-
-      setAssessment(finalAssessment);
       await new Promise((r) => setTimeout(r, 500));
 
-      // Transition to Split Mapping View
+      const finalAssessment: AssessmentResult = apiResult.data;
+      setAssessment(finalAssessment);
+
+      // Select first extracted question by default
+      const firstQId = finalAssessment.questions?.[0]?.id || "q-1";
+      setActiveQuestionId(firstQId);
+
+      // Transition to Mapping View
       setScreenState("mapping");
-      setActiveQuestionId("q-2");
     } catch (error) {
       console.error("Mapping execution error:", error);
-      setAssessment(getMockAssessmentResult());
-      setScreenState("mapping");
-      setActiveQuestionId("q-2");
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Failed to process assessment. Please verify your Gemini API key.";
+      setErrorMessage(msg);
+      setAssessment(null);
+      setScreenState("upload");
+      setSidebarCollapsed(false);
     }
   };
 
@@ -215,26 +267,35 @@ export default function Home() {
             <UploadScreen
               questionPaper={questionPaper}
               answerSheet={answerSheet}
+              errorMessage={errorMessage}
+              onClearError={() => setErrorMessage(null)}
+              onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
               onQuestionPaperSelected={(file, info) => {
+                setIsDemoMode(false);
+                setErrorMessage(null);
                 if (file) {
-                  setQuestionPaper({
+                  setQuestionPaper((prev) => ({
                     file,
                     name: info?.name || file.name,
-                    sizeFormatted: info?.sizeFormatted || "2.1 MB",
-                    pageCount: info?.pageCount || 2,
-                  });
+                    sizeFormatted: info?.sizeFormatted || prev?.sizeFormatted || "2.1 MB",
+                    pageCount: info?.pageCount || prev?.pageCount || 2,
+                    dataBase64List: info?.dataBase64List || prev?.dataBase64List,
+                  }));
                 } else {
                   setQuestionPaper(null);
                 }
               }}
               onAnswerSheetSelected={(file, info) => {
+                setIsDemoMode(false);
+                setErrorMessage(null);
                 if (file) {
-                  setAnswerSheet({
+                  setAnswerSheet((prev) => ({
                     file,
                     name: info?.name || file.name,
-                    sizeFormatted: info?.sizeFormatted || "8.0 MB",
-                    pageCount: info?.pageCount || 4,
-                  });
+                    sizeFormatted: info?.sizeFormatted || prev?.sizeFormatted || "8.0 MB",
+                    pageCount: info?.pageCount || prev?.pageCount || 4,
+                    dataBase64List: info?.dataBase64List || prev?.dataBase64List,
+                  }));
                 } else {
                   setAnswerSheet(null);
                 }

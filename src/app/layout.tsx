@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${fontJakarta.variable} ${fontCaveat.variable} ${fontPatrickHand.variable}`}>
-      <body className="min-h-screen bg-[#F8F9FA] text-[#1E242D] antialiased selection:bg-orange-100 selection:text-orange-900">
+      <body suppressHydrationWarning className="min-h-screen bg-[#F8F9FA] text-[#1E242D] antialiased selection:bg-orange-100 selection:text-orange-900">
         {children}
       </body>
     </html>
