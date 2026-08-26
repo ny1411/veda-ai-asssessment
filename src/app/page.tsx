@@ -1,69 +1,254 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+import { UploadScreen } from "@/components/upload/UploadScreen";
+import { LoadingScreen } from "@/components/processing/LoadingScreen";
+import { MappingView } from "@/components/mapping/MappingView";
+import { MobileMappingView } from "@/components/mapping/MobileMappingView";
+import { GradingSummaryModal } from "@/components/grading/GradingSummaryModal";
+import { ApiKeyModal } from "@/components/settings/ApiKeyModal";
+import { TeacherToolkitModal } from "@/components/toolkit/TeacherToolkitModal";
+import {
+  AppScreenState,
+  AssessmentResult,
+  UploadedFileInfo,
+} from "@/types/assessment";
+import { getMockAssessmentResult } from "@/lib/mock-data";
+import { processUploadedFileToImages } from "@/lib/file-converter";
 
 export default function Home() {
+  const [screenState, setScreenState] = useState<AppScreenState>("upload");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [questionPaper, setQuestionPaper] = useState<UploadedFileInfo | null>(null);
+  const [answerSheet, setAnswerSheet] = useState<UploadedFileInfo | null>(null);
+  const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>("q-2");
+
+  // Modals state
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [isGradingModalOpen, setIsGradingModalOpen] = useState(false);
+  const [isTeacherToolkitOpen, setIsTeacherToolkitOpen] = useState(false);
+  const [apiKey, setApiKey] = useState<string>("");
+
+  // Loading animation state
+  const [loadingStage, setLoadingStage] = useState(1);
+  const [loadingPercent, setLoadingPercent] = useState(15);
+  const [stageTitle, setStageTitle] = useState("Ingesting document pages...");
+
+  // Load API key from local storage on mount
+  useEffect(() => {
+    try {
+      const savedKey = localStorage.getItem("veda_gemini_api_key");
+      if (savedKey) setApiKey(savedKey);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleSaveApiKey = (newKey: string) => {
+    setApiKey(newKey);
+    try {
+      localStorage.setItem("veda_gemini_api_key", newKey);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Load preloaded Class 10 Biology Sample (matching Figma)
+  const handleLoadSample = () => {
+    const mock = getMockAssessmentResult();
+    setQuestionPaper({
+      file: null,
+      name: "Class_10_biology_unit_test.pdf",
+      sizeFormatted: "2.4 MB",
+      pageCount: 2,
+    });
+    setAnswerSheet({
+      file: null,
+      name: "student_1_answer_sheet.pdf",
+      sizeFormatted: "8.1 MB",
+      pageCount: 4,
+    });
+    setAssessment(mock);
+    setActiveQuestionId("q-2");
+  };
+
+  // Start Mapping Trigger with realistic progress stages
+  const handleStartMapping = async () => {
+    setScreenState("loading");
+    setSidebarCollapsed(true); // Collapse sidebar in loading state matching Figma
+
+    // If no assessment loaded yet, load or process
+    let currentAssessment = assessment;
+    if (!currentAssessment) {
+      currentAssessment = getMockAssessmentResult();
+      setAssessment(currentAssessment);
+    }
+
+    // Realistic multi-stage extraction animation
+    setLoadingStage(1);
+    setLoadingPercent(20);
+    setStageTitle("Document Ingestion & Multi-page Rendering...");
+
+    await new Promise((r) => setTimeout(r, 650));
+    setLoadingStage(2);
+    setLoadingPercent(50);
+    setStageTitle("Extracting Question Paper & Sub-parts (11a, 11b)...");
+
+    await new Promise((r) => setTimeout(r, 750));
+    setLoadingStage(3);
+    setLoadingPercent(80);
+    setStageTitle("OCR Transcribing Handwriting & Coordinate Bounding Boxes...");
+
+    await new Promise((r) => setTimeout(r, 700));
+    setLoadingStage(4);
+    setLoadingPercent(100);
+    setStageTitle("Synthesizing AI Marks & Pedagogical Feedback...");
+
+    await new Promise((r) => setTimeout(r, 550));
+
+    // Transition to Split Mapping View
+    setScreenState("mapping");
+    setActiveQuestionId("q-2");
+  };
+
+  const handleBackToUpload = () => {
+    setScreenState("upload");
+    setSidebarCollapsed(false);
+  };
+
+  const scoreSummary = assessment
+    ? {
+        total: assessment.summary.totalMarks,
+        max: assessment.summary.maxMarks,
+        percentage: assessment.summary.percentage,
+      }
+    : undefined;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex h-screen w-screen overflow-hidden bg-[#F8F9FA]">
+      {/* Sidebar (Desktop) */}
+      <div className="hidden md:flex">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+          activeItem="Exams"
+          onOpenTeacherToolkit={() => setIsTeacherToolkitOpen(true)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        {/* Top Header */}
+        <Header
+          showBack={screenState !== "upload"}
+          onBack={handleBackToUpload}
+          title={
+            screenState === "mapping" && assessment
+              ? `${assessment.title} — ${assessment.studentName}`
+              : "Exams"
+          }
+          onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+          onOpenGradingModal={() => setIsGradingModalOpen(true)}
+          hasApiKey={Boolean(apiKey)}
+          scoreSummary={screenState === "mapping" ? scoreSummary : undefined}
+        />
+
+        {/* Screen Switcher */}
+        <main className="flex-1 overflow-hidden flex flex-col relative">
+          {screenState === "upload" && (
+            <UploadScreen
+              questionPaper={questionPaper}
+              answerSheet={answerSheet}
+              onQuestionPaperSelected={(file, info) => {
+                if (file) {
+                  setQuestionPaper({
+                    file,
+                    name: info?.name || file.name,
+                    sizeFormatted: info?.sizeFormatted || "2.1 MB",
+                    pageCount: info?.pageCount || 2,
+                  });
+                } else {
+                  setQuestionPaper(null);
+                }
+              }}
+              onAnswerSheetSelected={(file, info) => {
+                if (file) {
+                  setAnswerSheet({
+                    file,
+                    name: info?.name || file.name,
+                    sizeFormatted: info?.sizeFormatted || "8.0 MB",
+                    pageCount: info?.pageCount || 4,
+                  });
+                } else {
+                  setAnswerSheet(null);
+                }
+              }}
+              onStartMapping={handleStartMapping}
+              onLoadSample={handleLoadSample}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+          )}
+
+          {screenState === "loading" && (
+            <LoadingScreen
+              currentStage={loadingStage}
+              progressPercent={loadingPercent}
+              stageTitle={stageTitle}
+            />
+          )}
+
+          {screenState === "mapping" && assessment && (
+            <>
+              {/* Desktop Split View */}
+              <div className="hidden md:flex flex-1 h-full overflow-hidden">
+                <MappingView
+                  assessment={assessment}
+                  activeQuestionId={activeQuestionId}
+                  onSelectQuestion={(id) => setActiveQuestionId(id)}
+                />
+              </div>
+
+              {/* Mobile View with Segmented Toggle */}
+              <div className="flex md:hidden flex-1 h-full overflow-hidden">
+                <MobileMappingView
+                  assessment={assessment}
+                  activeQuestionId={activeQuestionId}
+                  onSelectQuestion={(id) => setActiveQuestionId(id)}
+                />
+              </div>
+            </>
+          )}
+        </main>
+      </div>
+
+      {/* Grading Insights Modal */}
+      {assessment && (
+        <GradingSummaryModal
+          isOpen={isGradingModalOpen}
+          onClose={() => setIsGradingModalOpen(false)}
+          summary={assessment.summary}
+          studentName={assessment.studentName}
+          examTitle={assessment.title}
+          gradeLevel={assessment.gradeLevel}
+          questions={assessment.questions}
+        />
+      )}
+
+      {/* Gemini API Key Configuration Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        apiKey={apiKey}
+        onSaveApiKey={handleSaveApiKey}
+      />
+
+      {/* AI Teacher's Toolkit Modal */}
+      <TeacherToolkitModal
+        isOpen={isTeacherToolkitOpen}
+        onClose={() => setIsTeacherToolkitOpen(false)}
+      />
     </div>
   );
 }
