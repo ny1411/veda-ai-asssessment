@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { AnswerSheetPage, BoundingBox } from "@/types/assessment";
 import { BoundingBoxOverlay } from "./BoundingBoxOverlay";
 
 interface DocumentCanvasProps {
   page: AnswerSheetPage;
   zoomLevel: number;
+  containerWidth?: number;
   activeQuestionId: string | null;
   boxes: Array<{
     questionId: string;
@@ -16,77 +17,44 @@ interface DocumentCanvasProps {
 }
 
 /**
- * High-resolution canvas/image document page renderer with coordinate-based interactive bounding box overlays.
+ * High-resolution document page renderer that dynamically fits the container width at 100% scale (default)
+ * without overflowing, allowing natural aspect-ratio height scaling and interactive coordinate bounding boxes.
  */
 export function DocumentCanvas({
   page,
   zoomLevel,
+  containerWidth,
   activeQuestionId,
   boxes,
   onSelectQuestion,
 }: DocumentCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // If page is provided as data URL / image, load and ensure crisp rendering
-  useEffect(() => {
-    if (!page.imageUrl) return;
-
-    // Optional: render directly to canvas for ultra crisp rendering if needed
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = page.imageUrl;
-    img.onload = () => {
-      const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-      const displayWidth = Math.round(800 * (zoomLevel / 100));
-      const displayHeight = Math.round((img.height / img.width) * displayWidth);
-
-      canvas.width = displayWidth * dpr;
-      canvas.height = displayHeight * dpr;
-      canvas.style.width = `${displayWidth}px`;
-      canvas.style.height = `${displayHeight}px`;
-
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.scale(dpr, dpr);
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
-      }
-    };
-  }, [page.imageUrl, zoomLevel]);
-
-  const targetWidth = Math.round(800 * (zoomLevel / 100));
+  // Compute dynamic width: at 100% zoom, width matches exactly the allocated container width
+  const baseWidth = containerWidth && containerWidth > 0 ? containerWidth : undefined;
+  const targetWidth = baseWidth
+    ? Math.round(baseWidth * (zoomLevel / 100))
+    : undefined;
 
   return (
     <div
       ref={containerRef}
       id={`page-card-${page.pageNumber}`}
       style={{
-        width: `${targetWidth}px`,
-        maxWidth: "100%",
+        width: targetWidth ? `${targetWidth}px` : zoomLevel === 100 ? "100%" : `${zoomLevel}%`,
+        maxWidth: zoomLevel <= 100 ? "100%" : "none",
       }}
-      className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-300 transition-all duration-150 select-none flex-shrink-0"
+      className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-300 transition-[width,transform] duration-150 select-none flex-shrink-0"
     >
-      {/* Primary Page Canvas for High Sharpness */}
-      <canvas
-        ref={canvasRef}
-        className="w-full h-auto block pointer-events-none"
-        style={{ display: "block" }}
+      {/* Primary Page Image: Fits container width at 100% scale, height scales naturally according to aspect ratio */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={page.imageUrl}
+        alt={`Answer Sheet Page ${page.pageNumber}`}
+        className="w-full h-auto block select-none pointer-events-none"
+        draggable={false}
+        loading="eager"
       />
-
-      {/* Fallback image in case canvas is still loading */}
-      <noscript>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={page.imageUrl}
-          alt={`Answer Sheet Page ${page.pageNumber}`}
-          className="w-full h-auto block"
-        />
-      </noscript>
 
       {/* Interactive Bounding Box Overlay Layer */}
       <BoundingBoxOverlay
@@ -94,6 +62,8 @@ export function DocumentCanvas({
         activeQuestionId={activeQuestionId}
         boxes={boxes}
         onSelectQuestion={onSelectQuestion}
+        pageWidth={page.width}
+        pageHeight={page.height}
       />
 
       {/* Subtle Page Badge at Top-Right Corner */}

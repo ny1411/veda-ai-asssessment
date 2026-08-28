@@ -12,6 +12,8 @@ interface BoundingBoxOverlayProps {
     isUnmatched?: boolean;
   }>;
   onSelectQuestion: (questionId: string) => void;
+  pageWidth?: number;
+  pageHeight?: number;
 }
 
 export function BoundingBoxOverlay({
@@ -19,6 +21,8 @@ export function BoundingBoxOverlay({
   activeQuestionId,
   boxes,
   onSelectQuestion,
+  pageWidth = 800,
+  pageHeight = 1100,
 }: BoundingBoxOverlayProps) {
   const pageBoxes = boxes.filter((b) => b.box.pageNumber === pageNumber);
 
@@ -27,7 +31,7 @@ export function BoundingBoxOverlay({
       {pageBoxes.map((item, index) => {
         const isActive = item.questionId === activeQuestionId;
         const isUnmatched = item.isUnmatched;
-        const styles = boundingBoxToPercentages(item.box);
+        const styles = boundingBoxToPercentages(item.box, pageWidth, pageHeight);
 
         return (
           <div

@@ -29,6 +29,36 @@ export function AnswerSheetViewer({
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+
+  // Measure allocated container width dynamically
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const updateWidth = () => {
+      const computedStyle = window.getComputedStyle(el);
+      const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+      const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+      // Content width available for document page
+      const contentWidth = Math.max(200, Math.floor(el.clientWidth - paddingLeft - paddingRight));
+      setContainerWidth(contentWidth);
+    };
+
+    updateWidth();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateWidth();
+    });
+
+    resizeObserver.observe(el);
+    window.addEventListener("resize", updateWidth);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, []);
 
   // Active question details
   const activeQuestion = questions.find((q) => q.id === activeQuestionId);
@@ -259,23 +289,26 @@ export function AnswerSheetViewer({
       {/* Scrollable Answer Sheet Document Area */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-auto p-4 md:p-8 flex flex-col items-center space-y-8 bg-[#12161C]"
+        className="flex-1 overflow-y-auto overflow-x-auto p-4 md:p-6 bg-[#12161C]"
       >
-        {pages.map((page) => (
-          <DocumentCanvas
-            key={page.pageNumber}
-            page={page}
-            zoomLevel={zoomLevel}
-            activeQuestionId={activeQuestionId}
-            boxes={allBoxes}
-            onSelectQuestion={onSelectQuestion}
-          />
-        ))}
+        <div className="flex flex-col items-center space-y-6 w-full min-w-fit">
+          {pages.map((page) => (
+            <DocumentCanvas
+              key={page.pageNumber}
+              page={page}
+              zoomLevel={zoomLevel}
+              containerWidth={containerWidth}
+              activeQuestionId={activeQuestionId}
+              boxes={allBoxes}
+              onSelectQuestion={onSelectQuestion}
+            />
+          ))}
 
-        {/* End of Sheet Marker */}
-        <div className="text-gray-500 text-xs py-4 flex items-center space-x-2">
-          <FileQuestion className="w-4 h-4 text-gray-600" />
-          <span>End of Answer Sheet Pages</span>
+          {/* End of Sheet Marker */}
+          <div className="text-gray-500 text-xs py-4 flex items-center space-x-2">
+            <FileQuestion className="w-4 h-4 text-gray-600" />
+            <span>End of Answer Sheet Pages</span>
+          </div>
         </div>
       </div>
     </div>
