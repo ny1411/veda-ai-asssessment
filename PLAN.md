@@ -23,7 +23,7 @@ This document details the end-to-end technical blueprint, design fidelity, data 
 | **Edge Cases** | Out-of-order answers, unanswered questions, extra/unmatched student writing | Explicit status categorization (`ANSWERED`, `UNANSWERED`, `OUT_OF_ORDER`, `UNMATCHED`), visual alert pills, and unmatched answers drawer. |
 | **Grading & AI Feedback** | Marks calculation, correctness status, per-question feedback & overall exam summary | Dynamic scoring badges (`2/2`, `4/5`, `0/2`), collapsible AI Feedback accordions, and comprehensive teacher insights modal. |
 | **Design Fidelity** | Pixel-perfect alignment with Figma references (Desktop & Mobile) | Strict adherence to VedaAI design tokens, floating AI toolkit pill, Delhi Public School branding, loading sparkle animation, and mobile segmented toggle. |
-| **Live Evaluation Ready** | Immediate evaluator demo + live file upload with custom API key or built-in models | Built-in realistic mock sample datasets (matching Figma Biology test) + live Gemini 2.0/1.5 Flash multimodal API processing. |
+| **Live Evaluation Ready** | Immediate evaluator demo + live file upload with custom API key or built-in models | Built-in realistic mock sample datasets (matching Figma Biology test) + live Gemini models (3.6 / 3.5 Flash) multimodal API processing. |
 
 ---
 
@@ -31,36 +31,38 @@ This document details the end-to-end technical blueprint, design fidelity, data 
 
 ```mermaid
 flowchart TD
-    subgraph UI_Layer [Frontend - Next.js 16 + React 19 + Tailwind CSS]
-        UploadScreen["Upload Screen (Empty & Filled States)"]
-        LoadingScreen["Loading Screen (Animated Stars & Step Indicators)"]
-        SplitViewer["Mapping Split View"]
-        QuestionsPanel["Extracted Questions Panel (Left)"]
-        AnswerSheetViewer["Answer Sheet Canvas & Bounding Box Overlay (Right)"]
-        MobileToggle["Mobile Segmented Toggle (Questions / Answer Sheet)"]
-        GradingSummary["Grading & AI Insights Summary Modal"]
+    subgraph UI_Layer["Frontend (Next.js 16 + React 19 + Tailwind CSS)"]
+        UploadScreen["Upload Screen (PDF / Images)"]
+        LoadingScreen["Loading Screen (Animated Sparkle & Progress)"]
+        SplitViewer["Question-Answer Mapping Workspace"]
+        QuestionsPanel["Extracted Questions Panel"]
+        AnswerSheetViewer["Answer Sheet Canvas & Bounding Boxes"]
+        GradingSummary["Grading & AI Insights Modal"]
     end
 
-    subgraph Client_Processing [Client-side Document Processing]
-        PDFRenderer["PDF.js Renderer (Multi-page PDF to High-Res Canvas/Images)"]
+    subgraph Client_Processing["Client Document Processing"]
+        PDFRenderer["PDF.js Multi-Page Rasterizer"]
         ImagePreprocessor["Image Normalizer & Scaler"]
     end
 
-    subgraph Server_Layer [Next.js API & AI Pipeline]
-        APIRoute["/api/process-assessment (Next.js Route Handler)"]
-        GeminiVision["Gemini 2.0 / 1.5 Flash Multimodal Vision Engine"]
-        DemoEngine["In-Memory Mock Fallback & Sample Provider"]
+    subgraph Server_Layer["Server AI Pipeline"]
+        APIRoute["POST /api/process-assessment"]
+        GeminiVision["Gemini 3.6 / 3.7 Flash Vision Engine"]
+        DemoEngine["In-Memory Benchmark Provider"]
     end
 
-    UploadScreen -->|Uploads PDF / Images| PDFRenderer
-    PDFRenderer -->|Page Images Base64| APIRoute
-    APIRoute -->|Multimodal Prompt + Schema| GeminiVision
-    APIRoute -.->|Fallback / Demo Mode| DemoEngine
-    GeminiVision -->|Structured JSON Output| APIRoute
-    APIRoute -->|Parsed Questions, Mappings, Bounding Boxes, Scores| SplitViewer
+    UploadScreen --> PDFRenderer
+    PDFRenderer --> ImagePreprocessor
+    ImagePreprocessor --> APIRoute
+    APIRoute --> GeminiVision
+    APIRoute -.-> DemoEngine
+    GeminiVision --> APIRoute
+    APIRoute --> LoadingScreen
+    LoadingScreen --> SplitViewer
     SplitViewer --> QuestionsPanel
     SplitViewer --> AnswerSheetViewer
-    QuestionsPanel <-->|Two-way Sync Interaction| AnswerSheetViewer
+    SplitViewer --> GradingSummary
+    QuestionsPanel -. Synchronized Navigation .- AnswerSheetViewer
 ```
 
 ---
@@ -241,7 +243,7 @@ Phase 5: Question-Answer Mapping & Split View
 
 Phase 6: AI Extraction & Mapping Backend Pipeline
 ├── [x] Server Route `/api/process-assessment`: Ingests question paper & answer sheet images
-├── [x] Gemini 2.0 / 1.5 Flash Vision Multimodal integration with structured JSON schema output
+├── [x] Gemini Models (`gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`) Multimodal integration with structured JSON schema output
 ├── [x] Coordinate normalization & bounding box calculator
 └── [x] Fallback in-memory smart engine for zero-config offline / mock execution
 

@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-19-blue?style=flat-square&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.6_%2F_3.7_Flash-orange?style=flat-square&logo=google)](https://aistudio.google.com/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.6_%7C_3.5_Flash-orange?style=flat-square&logo=google)](https://aistudio.google.com/)
 
 > **VedaAI** is an intelligent assessment extraction, handwritten answer mapping, and automated grading platform built for educators. It automates printed question extraction from question papers, performs OCR transcription on student handwritten answer sheets, maps answers to questions with coordinate-level glowing bounding boxes, and generates rubric-aligned grading with constructive AI feedback.
 
@@ -102,37 +102,38 @@ Manual grading of handwritten school assessments is tedious, error-prone, and ti
 
 ```mermaid
 flowchart TD
-    subgraph UI_Layer [Frontend - Next.js 16 + React 19 + Tailwind CSS]
-        UploadScreen["Upload Screen (Empty & Filled States)"]
-        LoadingScreen["Loading Screen (Animated Sparkle & Progress)"]
-        SplitViewer["Question-Answer Mapping Split View"]
-        QuestionsPanel["Extracted Questions Panel (Left)"]
-        AnswerSheetViewer["Answer Sheet Canvas & Bounding Box Overlay (Right)"]
-        MobileToggle["Mobile Segmented Toggle (Questions / Answer Sheet)"]
+    subgraph UI_Layer["Frontend Layer (Next.js 16 + React 19)"]
+        UploadScreen["Upload Screen (PDF / Images)"]
+        LoadingScreen["4-Stage Animated Processing"]
+        SplitViewer["Question-Answer Mapping Workspace"]
+        QuestionsPanel["Extracted Questions Panel"]
+        AnswerSheetViewer["Answer Sheet Canvas & Bounding Boxes"]
         GradingModal["Grading & AI Insights Modal"]
-        ToolkitModal["AI Teacher's Toolkit Modal"]
     end
 
-    subgraph Client_Processing [Client-side Processing]
-        PDFRenderer["PDF.js Renderer (Multi-page PDF to High-Res Images)"]
-        ImageConverter["Base64 Image Normalizer"]
+    subgraph Client_Processing["Client Document Processing"]
+        PDFRenderer["PDF.js Multi-Page Rasterizer"]
+        ImageConverter["Base64 Image Preprocessor"]
     end
 
-    subgraph Server_Layer [Next.js App Router API Pipeline]
+    subgraph Server_Layer["Server & AI Pipeline"]
         APIRoute["POST /api/process-assessment"]
-        GeminiVision["Google Gemini 2.0 / 1.5 Flash Vision Engine"]
-        MockEngine["In-Memory Benchmark Dataset Provider"]
+        GeminiVision["Google Gemini Models (3.6 / 3.5 Flash)"]
+        MockEngine["In-Memory Benchmark Data Provider"]
     end
 
-    UploadScreen -->|Uploads PDF / Images| PDFRenderer
-    PDFRenderer -->|High-Res Base64 Data URLs| APIRoute
-    APIRoute -->|Multimodal Vision Prompt + Strict JSON Schema| GeminiVision
-    APIRoute -.->|Demo Sample Fallback| MockEngine
-    GeminiVision -->|Parsed Questions, Bounding Boxes, Grading| APIRoute
-    APIRoute -->|AssessmentResult JSON| SplitViewer
+    UploadScreen --> PDFRenderer
+    PDFRenderer --> ImageConverter
+    ImageConverter --> APIRoute
+    APIRoute --> GeminiVision
+    APIRoute -.-> MockEngine
+    GeminiVision --> APIRoute
+    APIRoute --> LoadingScreen
+    LoadingScreen --> SplitViewer
     SplitViewer --> QuestionsPanel
     SplitViewer --> AnswerSheetViewer
-    QuestionsPanel <-->|Two-Way Synchronized Click & Scroll| AnswerSheetViewer
+    SplitViewer --> GradingModal
+    QuestionsPanel -. Synchronized Navigation .- AnswerSheetViewer
 ```
 
 ### Core Technologies:
@@ -144,7 +145,7 @@ flowchart TD
 | **Styling** | Tailwind CSS v4 & PostCSS | Custom design tokens, glassmorphic utilities, and layout grids |
 | **Icons & Motion** | `lucide-react`, `framer-motion` | Crisp iconography and smooth UI transitions |
 | **PDF Processing** | `pdfjs-dist` | Multi-page client-side PDF rasterization to canvas/image buffers |
-| **AI Vision Engine** | `@google/generative-ai` | Multimodal prompt evaluation with Gemini 2.0 / 1.5 Flash |
+| **AI Vision Engine** | `@google/generative-ai` | Multimodal evaluation via models: `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite` |
 | **Celebration** | `canvas-confetti` | Confetti fireworks on grading score celebration |
 
 ---
@@ -252,7 +253,13 @@ veda-ai/
 
 ### `POST /api/process-assessment`
 
-Ingests question paper and answer sheet page images, runs Gemini multimodal analysis, and returns structured mapping results.
+Ingests question paper and answer sheet page images, runs Gemini multimodal vision analysis with automatic model fallback, and returns structured mapping results.
+
+#### Supported Gemini Models & Fallback Hierarchy
+The API endpoint iteratively evaluates requests against a model pipeline with strict JSON schema output (`responseMimeType: "application/json"`):
+1. **`gemini-3.6-flash`** — Primary high-intelligence multimodal model for question segmentation and complex diagram OCR.
+2. **`gemini-3.5-flash`** — High-speed fallback model for balanced transcription and bounding box detection.
+3. **`gemini-3.5-flash-lite`** — Lightweight fallback ensuring robust uptime and low-latency grading synthesis.
 
 #### Request Body
 ```json

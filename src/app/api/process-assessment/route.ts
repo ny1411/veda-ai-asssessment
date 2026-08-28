@@ -200,7 +200,7 @@ Return a STRICT JSON object matching this schema:
     }
 
     if (!rawText) {
-      throw lastError || new Error("All Gemini model candidates failed to generate content.");
+      throw lastError || new Error("All Gemini models failed to generate content.");
     }
 
     // Clean JSON markdown wrapper if present
